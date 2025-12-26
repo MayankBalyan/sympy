@@ -1,7 +1,13 @@
+from __future__ import annotations
+from typing import Callable, Any, TYPE_CHECKING
+
 from sympy.core import Expr
 from sympy.core.decorators import call_highest_priority, _sympifyit
 from .fancysets import ImageSet
 from .sets import set_add, set_sub, set_mul, set_div, set_pow, set_function
+
+if TYPE_CHECKING:
+    from sympy.sets.sets import Set
 
 
 class SetExpr(Expr):
@@ -22,65 +28,72 @@ class SetExpr(Expr):
     """
     _op_priority = 11.0
 
-    def __new__(cls, setarg):
+    if TYPE_CHECKING:
+        @property
+        def args(self) -> tuple[Set]:
+            ...
+
+    def __new__(cls, setarg: Set) -> SetExpr:  # type: ignore[misc]
         return Expr.__new__(cls, setarg)
 
-    set = property(lambda self: self.args[0])
+    @property
+    def set(self) -> Set:
+        return self.args[0]
 
-    def _latex(self, printer):
+    def _latex(self, printer: Any) -> str:
         return r"SetExpr\left({}\right)".format(printer._print(self.set))
 
-    @_sympifyit('other', NotImplemented)
+    @_sympifyit('other', NotImplemented)  # type: ignore[misc]
     @call_highest_priority('__radd__')
-    def __add__(self, other):
+    def __add__(self, other: Any) -> SetExpr:
         return _setexpr_apply_operation(set_add, self, other)
 
-    @_sympifyit('other', NotImplemented)
+    @_sympifyit('other', NotImplemented)  # type: ignore[misc]
     @call_highest_priority('__add__')
-    def __radd__(self, other):
+    def __rradd__(self, other: Any) -> SetExpr:
         return _setexpr_apply_operation(set_add, other, self)
 
-    @_sympifyit('other', NotImplemented)
+    @_sympifyit('other', NotImplemented)  # type: ignore[misc]
     @call_highest_priority('__rmul__')
-    def __mul__(self, other):
+    def __mul__(self, other: Any) -> SetExpr:
         return _setexpr_apply_operation(set_mul, self, other)
 
-    @_sympifyit('other', NotImplemented)
+    @_sympifyit('other', NotImplemented)  # type: ignore[misc]
     @call_highest_priority('__mul__')
-    def __rmul__(self, other):
+    def __rmul__(self, other: Any) -> SetExpr:
         return _setexpr_apply_operation(set_mul, other, self)
 
-    @_sympifyit('other', NotImplemented)
+    @_sympifyit('other', NotImplemented)  # type: ignore[misc]
     @call_highest_priority('__rsub__')
-    def __sub__(self, other):
+    def __sub__(self, other: Any) -> SetExpr:
         return _setexpr_apply_operation(set_sub, self, other)
 
-    @_sympifyit('other', NotImplemented)
+    @_sympifyit('other', NotImplemented)  # type: ignore[misc]
     @call_highest_priority('__sub__')
-    def __rsub__(self, other):
+    def __rsub__(self, other: Any) -> SetExpr:
         return _setexpr_apply_operation(set_sub, other, self)
 
-    @_sympifyit('other', NotImplemented)
+    @_sympifyit('other', NotImplemented)  # type: ignore[misc]
     @call_highest_priority('__rpow__')
-    def __pow__(self, other):
+    def __pow__(self, other: Any) -> SetExpr:  # type: ignore[override]
         return _setexpr_apply_operation(set_pow, self, other)
 
-    @_sympifyit('other', NotImplemented)
+    @_sympifyit('other', NotImplemented)  # type: ignore[misc]
     @call_highest_priority('__pow__')
-    def __rpow__(self, other):
+    def __rpow__(self, other: Any) -> SetExpr:
         return _setexpr_apply_operation(set_pow, other, self)
 
-    @_sympifyit('other', NotImplemented)
+    @_sympifyit('other', NotImplemented)  # type: ignore[misc]
     @call_highest_priority('__rtruediv__')
-    def __truediv__(self, other):
+    def __truediv__(self, other: Any) -> SetExpr:
         return _setexpr_apply_operation(set_div, self, other)
 
-    @_sympifyit('other', NotImplemented)
+    @_sympifyit('other', NotImplemented)  # type: ignore[misc]
     @call_highest_priority('__truediv__')
-    def __rtruediv__(self, other):
+    def __rtruediv__(self, other: Any) -> SetExpr:
         return _setexpr_apply_operation(set_div, other, self)
 
-    def _eval_func(self, func):
+    def _eval_func(self, func: Callable[[Expr], Expr]) -> SetExpr:
         # TODO: this could be implemented straight into `imageset`:
         res = set_function(func, self.set)
         if res is None:
@@ -88,7 +101,7 @@ class SetExpr(Expr):
         return SetExpr(res)
 
 
-def _setexpr_apply_operation(op, x, y):
+def _setexpr_apply_operation(op: Callable[[Any, Any], Set], x: Any, y: Any) -> SetExpr:
     if isinstance(x, SetExpr):
         x = x.set
     if isinstance(y, SetExpr):
